@@ -488,7 +488,7 @@ class ModelHumanLRM(nn.Module):
             smplx_data=smplx_params,
             additional_features={"image_feats": image_feats, "image": image[:, 0]},
         )
-
+        
         # render target views
         render_res_list = []
         for view_idx in range(num_views):
@@ -938,7 +938,7 @@ class ModelHumanLRMSapdinoBodyHeadSD3_5(ModelHumanLRM):
         latent_points, image_feats = self.forward_latent_points(
             image[:, 0], head_image[:, 0], camera=None, query_points=query_points
         )  # [B, N, C]
-
+        # pdb.set_trace()
         # render target views
         render_results = self.renderer(
             gs_hidden_features=latent_points,

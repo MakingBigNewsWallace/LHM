@@ -772,6 +772,9 @@ class HumanLRMInferrer(Inferrer):
                         :, batch_i : batch_i + batch_size
                     ].to(device)
 
+                if batch_i == 0:
+                    print("will save gs model to ", os.path.join(self.cfg.gs_model_dump ,f"{uid}_LHM_neutral_pose_gs.pth"))
+            
                 # def animation_infer(self, gs_model_list, query_points, smplx_params, render_c2ws, render_intrs, render_bg_colors, render_h, render_w):
                 res = self.model.animation_infer(gs_model_list, query_points, batch_smplx_params,
                     render_c2ws=motion_seq["render_c2ws"][
@@ -783,6 +786,8 @@ class HumanLRMInferrer(Inferrer):
                     render_bg_colors=motion_seq["render_bg_colors"][
                         :, batch_i : batch_i + batch_size
                     ].to(device),
+                    save_gs_model_path=os.path.join(self.cfg.gs_model_dump ,f"{uid}_LHM_neutral_pose_gs.pth") if batch_i == 0 else None
+
                     )
 
             comp_rgb = res["comp_rgb"] # [Nv, H, W, 3], 0-1

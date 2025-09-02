@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 import omegaconf
+from sympy import N
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -25,6 +26,7 @@ from LHM.models.rendering.utils.typing import *
 from LHM.models.rendering.utils.utils import MLP, trunc_exp
 from LHM.models.utils import LinerParameterTuner, StaticParameterTuner
 from LHM.outputs.output import GaussianAppOutput
+from tools.format_cvt.cvt_LHM_mesh_output import pack_gaussian_asset_and_pos,save_points_to_ply
 
 
 def auto_repeat_size(tensor, repeat_num, axis=0):
@@ -966,7 +968,6 @@ class GS3DRenderer(nn.Module):
         """
 
         device = gs_attr.offset_xyz.device
-
         if debug:
             N = gs_attr.offset_xyz.shape[0]
             gs_attr.xyz = torch.ones_like(gs_attr.offset_xyz) * 0.0
@@ -1081,7 +1082,8 @@ class GS3DRenderer(nn.Module):
                 cano_gs_list.append(gs_copy)
             else:
                 gs_list.append(gs_copy)
-
+        # print("length of gs_list: ", len(gs_list), "cano_gs_list: ", len(cano_gs_list),num_view)
+        # 1,1,2
         return gs_list, cano_gs_list
 
     def forward_gs_attr(self, x, query_points, smplx_data, debug=False, x_fine=None):
@@ -1121,6 +1123,10 @@ class GS3DRenderer(nn.Module):
         smplx_data["transform_mat_neutral_pose"] = (
             transform_mat_neutral_pose  # [B, 55, 4, 4]
         )
+        print("in gs3d renderee,get query points")
+        positions_ply = positions.detach().cpu().squeeze().numpy()
+        save_points_to_ply(positions_ply, "/home/wenbo/LHM/exps/Gaussians/video_human_benchmark/human-lrm-1B/get_query_points_position.ply",None,None)
+        
         return positions, smplx_data
 
     def decoder_cross_attn_wrapper(self, pcl_embed, latent_feat, extra_info):
@@ -1370,7 +1376,7 @@ class GS3DRenderer(nn.Module):
         cano_out_list = []  # inference DO NOT use
 
         N_view = smplx_data["root_pose"].shape[1]
-
+        # batch size 1 ,N_view 1
         for b in range(batch_size):
             gs_attr = gs_attr_list[b]
             query_pt = query_points[b]
@@ -1383,6 +1389,12 @@ class GS3DRenderer(nn.Module):
             )
 
             animatable_gs_model_list = merge_animatable_gs_model_list[:N_view]
+            '''to save the gs asset into ply and pth file for the very first view'''
+            if save_gs_model_path is not None:
+    
+                print("in gs_renderer/forward_animate_gs",type(animatable_gs_model_list[0]), animatable_gs_model_list[0].xyz.shape)
+                pack_gaussian_asset_and_pos(merge_animatable_gs_model_list, query_pt, save_gs_model_path,"GaussianModel")
+
 
             assert len(animatable_gs_model_list) == c2w.shape[1]
 
